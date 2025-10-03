@@ -1,4 +1,5 @@
 #include "../include/sys_calls.hpp"
+#include <iostream>
 #include <sched.h>
 #include <string>
 #include <unistd.h>
@@ -43,7 +44,7 @@ namespace sys_call {
     void SysCall::SetParentProc() {
         close(pipe_wr_);
         
-        char buffer[256];
+        char buffer[1024];
         ssize_t cnt;
         while ((cnt = read(pipe_rd_, buffer, sizeof(buffer))) > 0) {
             write(STDOUT_FILENO, buffer, cnt);
@@ -52,18 +53,11 @@ namespace sys_call {
         waitpid(child_pid_, nullptr, 0);
     }
 
-    void SysCall::Clean() {
-        if (pipe_rd_ != -1) {
-            close(pipe_rd_);
-            pipe_rd_ = -1;
-        }
-        if (pipe_wr_ != -1) {
-            close(pipe_wr_);
-            pipe_wr_ = -1;
-        }
-    }
-
     void SysCall::StartProcesses(const std::string& filename) {
+        if (access(filename.c_str(), F_OK) == -1) {
+            std::cerr << "Error: File '" << filename << "' does not exist!" << std::endl;
+            return;
+        }
         CreatePipe();
         CreateChild();
         if (child_pid_ == 0) {
@@ -72,9 +66,4 @@ namespace sys_call {
             SetParentProc();
         }
     }
-
-    SysCall::~SysCall() {
-        Clean();
-    }
-
 }

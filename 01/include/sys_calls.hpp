@@ -17,6 +17,6 @@ namespace sys_call {
       public:
         SysCall();
         void StartProcesses(const std::string& filename);
-        ~SysCall();
+        ~SysCall() = default;
     };
 }
