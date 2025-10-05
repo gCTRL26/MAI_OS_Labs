@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include)
 add_library(lib src/sys_calls.cpp)
+add_library(os_lib src/os.cpp)
+
+target_link_libraries(lib PUBLIC os_lib)
 
 add_executable(main main.cpp)
 target_link_libraries(main lib)

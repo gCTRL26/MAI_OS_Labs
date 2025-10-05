@@ -1,4 +1,5 @@
 #include "../include/sys_calls.hpp"
+#include "../include/os.hpp"
 #include <iostream>
 #include <sched.h>
 #include <string>
@@ -11,46 +12,46 @@ namespace sys_call {
 
     void SysCall::CreatePipe() {
         int pipe_fd[2];
-        if (pipe(pipe_fd) == -1) {
-            perror("pipe");
+        if (os::Pipe(pipe_fd) == -1) {
+            os::Perror("pipe");
         }
         pipe_rd_ = pipe_fd[0];
         pipe_wr_ = pipe_fd[1];
     }
 
     void SysCall::CreateChild() {
-        child_pid_ = fork();
+        child_pid_ = os::Fork();
         if (child_pid_ == -1) {
-            perror("fork");
+            os::Perror("fork");
         }
     }
 
     void SysCall::SetChildProc(const std::string& filename) {
-        close(pipe_rd_);
-        dup2(pipe_wr_, STDOUT_FILENO);
-        close(pipe_wr_);
+        os::Close(pipe_rd_);
+        os::Dup2(pipe_wr_, STDOUT_FILENO);
+        os::Close(pipe_wr_);
 
         int file_fd = open(filename.c_str(), O_RDONLY);
         if (file_fd == -1) {
-            perror("open");
+            os::Perror("open");
         }
-        dup2(file_fd, STDIN_FILENO);
-        close(file_fd);
+        os::Dup2(file_fd, STDIN_FILENO);
+        os::Close(file_fd);
 
-        execl("./child", "./child", nullptr);
-        perror("exec");
+        os::Execl("./child", "./child");
+        os::Perror("exec");
     }
 
     void SysCall::SetParentProc() {
-        close(pipe_wr_);
+        os::Close(pipe_wr_);
         
         char buffer[1024];
         ssize_t cnt;
         while ((cnt = read(pipe_rd_, buffer, sizeof(buffer))) > 0) {
-            write(STDOUT_FILENO, buffer, cnt);
+            os::Write(STDOUT_FILENO, buffer, cnt);
         }
-        close(pipe_rd_);
-        waitpid(child_pid_, nullptr, 0);
+        os::Close(pipe_rd_);
+        os::Wait(child_pid_);
     }
 
     void SysCall::StartProcesses(const std::string& filename) {
